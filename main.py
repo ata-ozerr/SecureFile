@@ -1,4 +1,4 @@
-import datetime    #kütüphaneyi eklemeliyiz. çünkü saat bilgisi vermeliyiz hata oldugunda.
+import datetime    #kütüphaneyi eklemeliyiz. çünkü hata olduğunda saat bilgisi vermeliyiz.
 import os          #Dosya islemlerini yapmak için gerekli
 
 def anahtarKontrolu(anahtar):       #kullandıgimiz AES sisteminde anahtar uzunlugu sabit (128 192 256)
