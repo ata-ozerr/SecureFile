@@ -12,3 +12,13 @@ def dosyaVarMi (dosya_yolu):
         return True
     return False
 
+
+def mesajYaz (mesaj):                 #hata ya da bilgi msajlarını file diye adlandırdıgımız dosyaya yazmak
+    zaman =datetime.datetime.now ()               #su anki zamani alir 
+    with open ("file.txt","a") as dosya:           # file dosaysını acar
+        dosya.write(str(zaman) +"-" + mesaj + "\n")   #dosya.write nin görevi açılmış dosyaya yazı yazmaktır
+
+
+
+        
+
