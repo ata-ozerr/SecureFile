@@ -1,9 +1,10 @@
 import datetime    #kütüphaneyi eklemeliyiz. çünkü hata olduğunda saat bilgisi vermeliyiz.
 import os          #Dosya islemlerini yapmak için gerekli
 
-def anahtarKontrolu(anahtar):       #kullandıgimiz AES sisteminde anahtar uzunlugu sabit (128 192 256)
-    if len(anahtar) != 32:           #kullanıcı yanlıs uzunlukta hata girmesin diye yapılıyor  
-        return False
+def anahtarKontrolu(anahtar, uzunluk=32):       #kullandıgimiz AES sisteminde anahtar uzunlugu sabit (128 192 256)
+    if len(anahtar) != uzunluk:                 #kullanıcı yanlıs uzunlukta hata girmesin diye yapılıyor  
+       print(f"Anahtar {uzunluk}karakter kadar olmalidir.")            
+       return False
     return True
 
 
@@ -18,6 +19,13 @@ def mesajYaz (mesaj):                 #hata ya da bilgi msajlarını file diye a
     with open ("file.txt","a") as dosya:           # file dosaysını acar
         dosya.write(str(zaman) +"-" + mesaj + "\n")   #dosya.write nin görevi açılmış dosyaya yazı yazmaktır
 
+
+def kontrolluCalistirma (herhangifonksiyon):     
+    try:                                             #herhangi bir fonksiyonun doğru çalışıp çalışmadığını kontrol eder
+        herhangifonksiyon()                          #kullanmak zorunda değiliz
+    except Exception as hata :
+        print("Bir hata oluştu:", hata)
+        mesajYaz("Hata:  " + str(hata))    
 
 
         
