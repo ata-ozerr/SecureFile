@@ -2,6 +2,8 @@ import customtkinter as ctk
 from PIL import Image, ImageTk
 from tkinter import filedialog, messagebox
 import os
+import aes_şfreleme # Şifreleme algoritmamızı projeye dahil ettim
+import security # Hata yakalama, dosya kontrolü ve loglama için security modülünü ekledim
 
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
@@ -58,3 +60,91 @@ class CipherApp:
         
         yol_kutusu = ctk.CTkEntry(pencere, width=450, height=40, placeholder_text="Dosya yolu...")
         yol_kutusu.pack(pady=20)
+
+        # Yarım kalan arayüz dosyasındaki eksik fonksiyonları buradan itibaren tamamladım
+        def sec():
+            yol = filedialog.askopenfilename(filetypes=[("Text Files", "*.txt")]) # Sadece txt dosyaları seçilsin diye filtreledim
+            if yol:
+                yol_kutusu.delete(0, "end")
+                yol_kutusu.insert(0, yol)
+
+        def baslat():
+            girdi = yol_kutusu.get()
+            if not girdi: 
+                messagebox.showwarning("Uyarı", "Lütfen bir dosya seçin!")
+                return
+            
+            # İşleme başlamadan önce dosya var mı diye security modülü ile kontrol ettim
+            if not security.dosyaVarMi(girdi):
+                messagebox.showerror("Hata", "Seçilen dosya bulunamadı!")
+                return
+            
+            try:
+                if islem_tipi == "sifrele":
+                    # Dosyayı okuma modunda (string olarak) açtım
+                    with open(girdi, 'r', encoding='utf-8') as f: 
+                        duzmetin = f.read()
+
+                    # Gerçek AES şifreleme fonksiyonumuzu çağırdım
+                    sifreli_hex, anahtar_hex, tka_hex = aes_şfreleme.sifrele(duzmetin)
+
+                    cikti = os.path.dirname(girdi) + "/sifreli_" + os.path.basename(girdi)
+                    
+                    # Şifreyi çözerken lazım olacağı için anahtar ve tka'yı (nonce) txt dosyasının başına alt alta ekleyerek kaydettim
+                    with open(cikti, 'w', encoding='utf-8') as f: 
+                        f.write(f"{anahtar_hex}\n{tka_hex}\n{sifreli_hex}")
+
+                    messagebox.showinfo("Başarılı", f"Dosya Şifrelendi!\nKonum: {cikti}")
+                    security.mesajYaz(f"Başarılı şifreleme islemi: {cikti}") # İşlem başarılı olunca security loguna yazdırdım
+
+                else:
+                    # Şifreli dosyayı okuyup kaydettiğim ayraca (\n) göre satırlara böldüm
+                    with open(girdi, 'r', encoding='utf-8') as f:
+                        satirlar = f.read().split('\n')
+
+                    if len(satirlar) < 3:
+                        messagebox.showerror("Hata", "Dosya formatı hatalı veya şifreli değil!")
+                        return
+
+                    # Şifrelerken dosyaya kaydettiğim sıraya göre değişkenleri geri çektim
+                    anahtar_hex = satirlar[0]
+                    tka_hex = satirlar[1]
+                    sifreli_hex = satirlar[2]
+
+                    # Şifre çözmeden önce security modülündeki anahtar uzunluk kontrolünü devreye soktum
+                    if not security.anahtarKontrolu(bytes.fromhex(anahtar_hex)):
+                        messagebox.showerror("Hata", "Geçersiz anahtar uzunluğu!")
+                        return
+
+                    # Gerçek AES çözücü fonksiyonumuzu çağırdım
+                    cozulmus_metin = aes_şfreleme.cozucu(sifreli_hex, anahtar_hex, tka_hex)
+
+                    temiz_isim = os.path.basename(girdi).replace("sifreli_", "")
+                    cikti = os.path.dirname(girdi) + "/cozulmus_" + temiz_isim
+                    
+                    with open(cikti, 'w', encoding='utf-8') as f: 
+                        f.write(cozulmus_metin)
+
+                    messagebox.showinfo("Başarılı", f"Şifre Çözüldü!\nKonum: {cikti}")
+                    security.mesajYaz(f"Başarılı deşifre islemi: {cikti}") # İşlem başarılı olunca log kaydı tuttum
+                
+                self.menuya_don(pencere) 
+                
+            except Exception as error: 
+                # Hata yakalama bloğundaki typo'yu (Exeption) ve hata mesajı formatını (e) düzelttim
+                messagebox.showerror("Hata", f"İşlem sırasında bir hata oluştu: {error}")
+                security.mesajYaz(f"Hata oluştu: {error}") # Hatayı security modülü ile file.txt dosyasına logladım
+
+        # Arayüzde eksik olan butonları ekleyip yerleştirdim ve komutlarını bağladım
+        ctk.CTkButton(pencere, text="DOSYA SEÇ", command=sec, width=150).pack(pady=10)
+        ctk.CTkButton(pencere, text="İŞLEMİ BAŞLAT", command=baslat, fg_color="#2ecc71", width=200, height=40).pack(pady=30)
+        ctk.CTkButton(pencere, text="GERİ DÖN", command=lambda: self.menuya_don(pencere), fg_color="gray").pack()
+
+    def menuya_don(self, pencere):
+        pencere.destroy() 
+        self.root.deiconify() 
+
+if __name__ == "__main__":
+    root = ctk.CTk()
+    app = CipherApp(root)
+    root.mainloop()
